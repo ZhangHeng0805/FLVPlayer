@@ -199,7 +199,7 @@
 
         // 检查URL参数
         const urlParams = new URLSearchParams(window.location.search);
-        const videoUrl = urlParams.get('url');
+        const videoUrl = decodeURIComponent(urlParams.get('url'));
 
         if (videoUrl) {
             // 自动切换到在线播放标签页
