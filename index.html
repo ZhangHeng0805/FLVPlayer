@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="img/favicon.ico" type="image/x-icon">
     <title>【星曦向荣】FLV 播放器</title>
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "https://hm.baidu.com/hm.js?5087e13fa5fa20d0d364de6066042695";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+    <meta name="referrer" content="no-referrer">
     <script src="js/flv.min.js"></script>
     <link href="css/font-awesome.min.css" rel="stylesheet">
     <script src="js/tailwindcss-3.4.16.js"></script>
@@ -134,7 +144,10 @@
         <!-- 视频播放区域 -->
         <div class="relative bg-gray-900">
             <div id="videoContainer" class="aspect-video w-full bg-black flex items-center justify-center">
-                <video id="videoElement" class="max-w-full max-h-full" controls></video>
+                <video id="videoElement" class="max-w-full max-h-full" controls playsinline
+                       webkit-playsinline
+                       x5-video-player-type="h5"
+                       x5-video-player-fullscreen="true"></video>
 
                 <!-- 加载动画 (默认隐藏) -->
                 <div id="loadingOverlay" class="absolute inset-0 bg-black/50 flex items-center justify-center hidden">
@@ -304,6 +317,64 @@
         }
     }
 
+    // 自定义 Loader 类
+    class CustomLoader {
+        constructor(loaderConfig) {
+            this.loaderConfig = loaderConfig;
+            this.url = '';
+            this.aborted = false;
+            this.request = null;
+        }
+
+        open(dataSource, type, url) {
+            this.url = url;
+            this.load();
+        }
+
+        load() {
+            this.aborted = false;
+            this.request = new XMLHttpRequest();
+            let url = this.url;
+            this.request.open('GET', url, true);
+            this.request.responseType = 'arraybuffer';
+
+            // this.request.setRequestHeader('Authorization', 'Bearer YOUR_TOKEN_HERE');
+            // this.request.setRequestHeader('Custom-Header', 'Your Value');
+
+            // 监听进度和完成事件
+            this.request.onprogress = (e) => {
+                if (this.aborted) return;
+                if (e.lengthComputable) {
+                    this.loaderConfig.onProgress(e.loaded, e.total, e);
+                }
+            };
+
+            this.request.onload = () => {
+                if (this.aborted) return;
+                if (this.request.status >= 200 && this.request.status < 300) {
+                    this.loaderConfig.onSuccess(this.request.response, url, 0);
+                } else {
+                    this.loaderConfig.onError('NetworkError', this.request.statusText);
+                }
+            };
+
+            this.request.onerror = () => {
+                if (this.aborted) return;
+                this.loaderConfig.onError('NetworkError', 'Network request failed');
+            };
+
+            this.request.send();
+        }
+
+        abort() {
+            this.aborted = true;
+            if (this.request) {
+                this.request.abort();
+                this.request = null;
+            }
+        }
+    }
+
     // 播放 FLV 视频
     function playFLV(source) {
         showStatus('正在加载视频...', 'info');
@@ -319,9 +390,13 @@
 
                 // 创建 FLV 播放器
                 flvPlayer = flvjs.createPlayer({
-                    type: 'flv',
-                    url: source
-                });
+                        type: 'flv',
+                        url: source,
+                        isLive: true,  // 是否为直播流
+                        enableStashBuffer: false,  // 减少延迟
+                    }
+                    // , {customLoader: CustomLoader}
+                );
             } else {
                 // 本地文件
                 showStatus(`正在加载本地视频: ${source.name}`, 'info');
@@ -430,6 +505,26 @@
 
     // 初始化应用
     document.addEventListener('DOMContentLoaded', init);
+
+    // 兼容所有浏览器进入全屏函数
+    function enterFullScreen(el) {
+        if (el.requestFullscreen) {
+            el.requestFullscreen();
+        } else if (el.webkitRequestFullscreen) {
+            el.webkitRequestFullscreen();
+        } else if (el.mozRequestFullScreen) {
+            el.mozRequestFullScreen();
+        } else if (el.msRequestFullscreen) {
+            el.msRequestFullscreen();
+        }
+        // iOS 专用全屏方法
+        else if (el.webkitEnterFullScreen) {
+            el.webkitEnterFullScreen();
+        }
+    }
+    videoElement.addEventListener('play', () => {
+        enterFullScreen(videoElement);
+    })
 </script>
 </body>
 </html>
