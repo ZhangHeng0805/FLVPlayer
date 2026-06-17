@@ -225,7 +225,7 @@
             switchTab('online');
             if (window.location.href.startsWith("https:")) {
                 if (videoUrl.startsWith("http:")) {
-                    videoUrl.replace("http:", "https:")
+                    videoUrl = videoUrl.replace("http:", "https:")
                 }
             }
             // 填充URL输入框
@@ -444,10 +444,10 @@
             flvPlayer.play();
             loadingOverlay.classList.add('hidden');
         } catch (error) {
-            let msg=error.message;
-            if (window.location.href.startsWith("https:")){
-                if (source.startsWith("http:")){
-                    msg+=" HTTPS 页面禁止加载 HTTP 资源"
+            let msg = error.message;
+            if (window.location.href.startsWith("https:")) {
+                if (source.startsWith("http:")) {
+                    msg += " HTTPS 页面禁止加载 HTTP 资源"
                 }
             }
             showStatus(`播放错误: ${msg}`, 'danger');
