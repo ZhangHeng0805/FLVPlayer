@@ -444,7 +444,13 @@
             flvPlayer.play();
             loadingOverlay.classList.add('hidden');
         } catch (error) {
-            showStatus(`播放错误: ${error.message}`, 'danger');
+            let msg=error.message;
+            if (window.location.href.startsWith("https:")){
+                if (source.startsWith("http:")){
+                    msg+=" HTTPS 页面禁止加载 HTTP 资源"
+                }
+            }
+            showStatus(`播放错误: ${msg}`, 'danger');
             loadingOverlay.classList.add('hidden');
             console.error('播放错误:', error);
         }
