@@ -7,7 +7,7 @@
     <title>【星曦向荣】FLV 播放器</title>
     <script>
         var _hmt = _hmt || [];
-        (function() {
+        (function () {
             var hm = document.createElement("script");
             hm.src = "https://hm.baidu.com/hm.js?5087e13fa5fa20d0d364de6066042695";
             var s = document.getElementsByTagName("script")[0];
@@ -162,8 +162,8 @@
         <!-- 播放器信息 -->
         <div class="p-4 bg-gray-50 text-xs text-gray-500 flex justify-between">
             <div>
-                <span class="font-medium">GitHub</span> : <a target="_blank"
-                                                             href="https://github.com/ZhangHeng0805/LiveMonitoringRecording">LiveMonitoringRecording</a>
+                <span class="font-medium"><i class="fa fa-github mr-1"></i>GitHub</span> : <a target="_blank"
+                                                                                              href="https://github.com/ZhangHeng0805/FLVPlayer">FLVPlayer</a>
             </div>
             <div>
                 <span class="font-medium">支持格式:</span> FLV (H.264 + AAC/MP3)
@@ -223,7 +223,11 @@
 
             // 自动切换到在线播放标签页
             switchTab('online');
-
+            if (window.location.href.startsWith("https:")) {
+                if (videoUrl.startsWith("http:")) {
+                    videoUrl.replace("http:", "https:")
+                }
+            }
             // 填充URL输入框
             urlInput.value = videoUrl;
             playUrlBtn.disabled = false;
@@ -522,6 +526,7 @@
             el.webkitEnterFullScreen();
         }
     }
+
     videoElement.addEventListener('play', () => {
         enterFullScreen(videoElement);
     })
