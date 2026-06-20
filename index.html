@@ -63,6 +63,7 @@
             font-size: 14px;
             pointer-events: auto;
         }
+
         #captureBtn:hover {
             background: rgba(0, 0, 0, 0.8);
         }
@@ -269,6 +270,13 @@
 
         const img = document.createElement('img');
         img.src = imgBase64;
+        img.onclick = () => {
+            if (isFullscreen()) {
+                exitFullscreen();
+            } else {
+                enterFullScreen(img);
+            }
+        };
 
         // 按钮容器（存放保存+删除）
         const btnWrap = document.createElement('div');
@@ -633,6 +641,26 @@
             el.webkitEnterFullScreen();
         }
     }
+
+    function exitFullscreen() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
+
+    function isFullscreen() {
+        return !!(document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement);
+    }
+
 
     videoElement.addEventListener('play', () => {
         // enterFullScreen(videoElement);
