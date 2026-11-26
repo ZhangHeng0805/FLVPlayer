@@ -1427,12 +1427,12 @@
         // 检查URL参数
         const urlParams = new URLSearchParams(window.location.search);
 
-        if (urlParams.get('url')) {
+        if (urlParams.get('shared')) {
             let videoUrl;
-            if (urlParams.get('url').startsWith("http")) {
-                videoUrl = decodeURIComponent(urlParams.get('url'));
+            if (urlParams.get('shared').startsWith("http")) {
+                videoUrl = decodeURIComponent(urlParams.get('shared'));
             } else {
-                videoUrl = atob(urlParams.get('url'));
+                videoUrl = atob(urlParams.get('shared'));
             }
 
             // 自动切换到在线播放标签页
