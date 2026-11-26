@@ -17,6 +17,8 @@
     <meta name="referrer" content="no-referrer">
     <script src="js/flv.min.js"></script>
     <link href="css/font-awesome.min-4.7.0.css" rel="stylesheet">
+    <script src="https://zhangheng0805.github.io/LiveMonitoringRecordingPage/js/mainURL.js"></script>
+    <script src="https://zhangheng0805.github.io/LiveMonitoringRecordingPage/js/client-info.js"></script>
 
     <style>
         :root {
@@ -797,6 +799,7 @@
 </div>
 
 <script>
+    getMainUrl();
     const fileInput = document.getElementById('fileInput');
     const urlInput = document.getElementById('urlInput');
     const videoElement = document.getElementById('videoElement');
@@ -824,7 +827,6 @@
     const wechatTipText = document.getElementById('wechatTipText');
     const wechatTipClose = document.getElementById('wechatTipClose');
     const isWeChat = /MicroMessenger/i.test(navigator.userAgent || '');
-
     /* ---------------- 视频规格（分辨率 / 帧率 / 码率 / 时长） ---------------- */
     let spec = {};
     let specTimer = null;
