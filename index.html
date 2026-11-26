@@ -327,6 +327,63 @@
 
         .flvx-spec .spec-sep { color: #dfe2ea; }
 
+        /* ---------- 微信内置浏览器引导 ---------- */
+        .flvx-wx {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-start;
+            padding: 1rem 1.2rem;
+            background: rgba(12, 14, 18, .88);
+            color: #fff;
+        }
+
+        .flvx-wx.is-hidden { display: none; }
+
+        .flvx-wx-card {
+            max-width: 19rem;
+            margin-top: 3.4rem;
+            text-align: right;
+        }
+
+        .flvx-wx-arrow {
+            font-size: 1.7rem;
+            margin-bottom: .4rem;
+            animation: flvx-nudge 1.3s ease-in-out infinite;
+        }
+
+        @keyframes flvx-nudge { 50% { transform: translate(4px, -4px); } }
+
+        .flvx-wx-card h3 {
+            margin: 0 0 .4rem;
+            font-size: .95rem;
+            font-weight: 700;
+        }
+
+        .flvx-wx-card p {
+            margin: 0 0 .85rem;
+            font-size: .78rem;
+            line-height: 1.65;
+            color: rgba(255, 255, 255, .84);
+        }
+
+        .flvx-wx-btn {
+            height: 2.1rem;
+            padding: 0 1rem;
+            font-size: .78rem;
+            font-weight: 600;
+            font-family: inherit;
+            color: #fff;
+            background: rgba(255, 255, 255, .16);
+            border: 1px solid rgba(255, 255, 255, .32);
+            border-radius: .45rem;
+            cursor: pointer;
+        }
+
+        .flvx-wx-btn:hover { background: rgba(255, 255, 255, .26); }
+
         /* ---------- 播放区 ---------- */
         .flvx-stage {
             position: relative;
@@ -609,6 +666,15 @@
     </style>
 </head>
 <body>
+<!-- 微信内置浏览器：无法下载，引导跳系统浏览器 -->
+<div id="wechatTip" class="flvx-wx is-hidden">
+    <div class="flvx-wx-card">
+        <div class="flvx-wx-arrow"><i class="fa fa-location-arrow"></i></div>
+        <h3>微信内无法保存录制文件</h3>
+        <p id="wechatTipText">请点右上角「···」，选择“在浏览器打开”，再回到本页面开始录制。</p>
+        <button id="wechatTipClose" class="flvx-wx-btn">我知道了</button>
+    </div>
+</div>
 <div class="flvx-wrap">
     <header class="flvx-header">
         <div class="flvx-logo"><i class="fa fa-play"></i></div>
@@ -754,6 +820,10 @@
     const recordBar = document.getElementById('recordBar');
     const recordText = document.getElementById('recordText');
     const recordResult = document.getElementById('recordResult');
+    const wechatTip = document.getElementById('wechatTip');
+    const wechatTipText = document.getElementById('wechatTipText');
+    const wechatTipClose = document.getElementById('wechatTipClose');
+    const isWeChat = /MicroMessenger/i.test(navigator.userAgent || '');
 
     /* ---------------- 视频规格（分辨率 / 帧率 / 码率 / 时长） ---------------- */
     let spec = {};
@@ -1130,6 +1200,11 @@
     }
 
     function startRecording() {
+        if (isWeChat) {
+            wechatTip.classList.remove('is-hidden');
+            showStatus('微信内置浏览器无法保存录制文件，请先在系统浏览器中打开本页面', 'danger');
+            return;
+        }
         if (!videoElement.videoWidth || !videoElement.videoHeight) {
             showStatus('视频尚未加载完成，无法录制', 'danger');
             return;
@@ -1431,6 +1506,18 @@
 
         // 页面卸载时清理资源
         window.addEventListener('unload', releaseResources);
+
+        // 微信内置浏览器：下载被拦，先引导用户跳到系统浏览器
+        if (isWeChat) {
+            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+            wechatTipText.textContent = isIOS
+                ? '微信内无法下载文件。请点右上角「···」选择“复制链接”，再在 Safari 中打开本页面录制。'
+                : '微信内无法下载文件。请点右上角「···」选择“在浏览器打开”，再回到本页面录制。';
+            wechatTip.classList.remove('is-hidden');
+        }
+        wechatTipClose.addEventListener('click', function () {
+            wechatTip.classList.add('is-hidden');
+        });
     }
 
     // 切换标签页
