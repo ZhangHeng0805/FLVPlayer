@@ -19,6 +19,7 @@
     <link href="css/font-awesome.min-4.7.0.css" rel="stylesheet">
     <script src="https://zhangheng0805.github.io/LiveMonitoringRecordingPage/js/mainURL.js"></script>
     <script src="https://zhangheng0805.github.io/LiveMonitoringRecordingPage/js/client-info.js"></script>
+    <script src="https://zhangheng0805.github.io/LiveMonitoringRecordingPage/js/ui.js"></script>
 
     <style>
         :root {
@@ -831,22 +832,29 @@
     let spec = {};
     let specTimer = null;
     let lastFrameSample = null;
+    let fpsAvg = 0;        // 帧率指数平均值
+    let kbpsAvg = 0;       // 码率指数平均值
+    let specTick = 0;
 
     function resetSpec() {
         spec = { width: 0, height: 0, fps: 0, fpsMeta: 0, bitrateKbps: 0, duration: NaN };
         lastFrameSample = null;
+        fpsAvg = 0;
+        kbpsAvg = 0;
+        specTick = 0;
         renderSpec();
     }
 
     function formatFps(value) {
         if (!value || !isFinite(value) || value <= 0) return '—';
-        const rounded = value >= 10 ? Math.round(value * 10) / 10 : Math.round(value * 100) / 100;
+        const rounded = Math.round(value * 10) / 10;
         return `${String(rounded).replace(/\.0$/, '')} fps`;
     }
 
     function formatBitrate(kbps) {
         if (!kbps || !isFinite(kbps) || kbps <= 0) return '—';
-        return `${Math.round(kbps)} kbits/s`;
+        // 量化到 10 kbits/s，避免末位数字来回跳
+        return `${Math.round(kbps / 10) * 10} kbits/s`;
     }
 
     function renderSpec() {
@@ -904,8 +912,12 @@
                 const delta = total - lastFrameSample.frames;
                 const dt = (now - lastFrameSample.t) / 1000;
                 if (delta >= 0 && !videoElement.paused) {
-                    const fps = delta / dt;
-                    if (fps > 0) spec.fps = Math.min(fps, 240);
+                    const raw = Math.min(delta / dt, 240);
+                    if (raw > 0) {
+                        // 慢速向新样本靠拢，抑制单次抖动
+                        fpsAvg = fpsAvg > 0 ? fpsAvg * 0.7 + raw * 0.3 : raw;
+                        spec.fps = fpsAvg;
+                    }
                 }
                 lastFrameSample = { t: now, frames: total };
             } else if (!lastFrameSample) {
@@ -917,9 +929,12 @@
 
     function startSpecTimer() {
         stopSpecTimer();
+        specTick = 0;
         specTimer = setInterval(function () {
             measureFps();
-            renderSpec();
+            // 每 2 秒刷新一次文案，帧率仍在每秒采样
+            specTick += 1;
+            if (specTick % 2 === 0) renderSpec();
         }, 1000);
     }
 
@@ -1348,7 +1363,7 @@
     // 截图核心逻辑
     function captureFrame() {
         if (!videoElement.videoWidth || !videoElement.videoHeight) {
-            alert('视频尚未加载完成，无法截图');
+            UI.alert('视频尚未加载完成，无法截图', {title:'无法截图', tone:'warn'});
             return;
         }
         setCanvasSize();
@@ -1822,16 +1837,23 @@
                 const md = info.metadata || {};
                 const metaKbps = (Number(md.videodatarate) || 0) + (Number(md.audiodatarate) || 0);
                 if (metaKbps > 0) saveCachedBitrate(metaKbps); // 记住码率，下次开播就按真实码率算缓冲
+                if (metaKbps > 0 && !kbpsAvg) kbpsAvg = metaKbps; // 用元数据码率做起点，后续统计值慢慢收敛
                 if (metaKbps > 0 && !spec.bitrateKbps) spec.bitrateKbps = metaKbps;
                 renderSpec();
             });
 
-            // 规格来源二：flv.js 每秒统计的下载速率，KB/s 转 kbps
+            // 规格来源二：flv.js 每秒统计的下载速率，KB/s 转 kbps（走指数平均，避免数字乱跳）
             flvPlayer.on(flvjs.Events.STATISTICS_INFO, (info) => {
                 if (!info) return;
-                const kbps = Number(info.speed) * 8;
-                if (kbps > 0) spec.bitrateKbps = kbps;
-                renderSpec();
+                const raw = Number(info.speed) * 8;
+                if (!(raw > 0)) return;
+                if (kbpsAvg > 0) {
+                    kbpsAvg = kbpsAvg * 0.85 + raw * 0.15;
+                } else {
+                    kbpsAvg = raw;
+                    renderSpec(); // 第一个样本立刻显示，之后交给定时器
+                }
+                spec.bitrateKbps = kbpsAvg;
             });
 
             // 挂载播放器到视频元素
